@@ -1,0 +1,126 @@
+body {
+    font-family: "Segoe UI", sans-serif;
+    background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+    margin: 0;
+}
+
+/* Header */
+.chat-header {
+    text-align: center;
+    color: white;
+    padding: 18px;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+/* Chat container */
+.chat-container {
+    width: 450px;
+    margin: auto;
+    background: white;
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    box-shadow: 0px 10px 40px rgba(0,0,0,0.2);
+    overflow: hidden;
+}
+
+/* Chat box */
+.chat-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: #f9fafb;
+}
+
+/* Message bubbles */
+.message {
+    margin: 8px 0;
+    padding: 10px 14px;
+    border-radius: 12px;
+    max-width: 70%;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* User message */
+.user {
+    background: #2563eb;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 0;
+}
+
+/* Bot message */
+.bot {
+    background: #e5e7eb;
+    color: #111;
+    margin-right: auto;
+    border-bottom-left-radius: 0;
+}
+
+/* Input area */
+.input-box {
+    display: flex;
+    border-top: 1px solid #ddd;
+    background: white;
+}
+
+input {
+    flex: 1;
+    padding: 14px;
+    border: none;
+    outline: none;
+    font-size: 14px;
+}
+
+button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 0 20px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #1e40af;
+}
+
+/* Loader (typing dots) */
+.loader {
+    display: flex;
+    gap: 4px;
+    padding: 8px 15px;
+}
+
+.dot {
+    width: 6px;
+    height: 6px;
+    background: gray;
+    border-radius: 50%;
+    animation: blink 1.4s infinite;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes blink {
+    0%, 80%, 100% { opacity: 0; }
+    40% { opacity: 1; }
+}
+
+/* Hide */
+.hidden {
+    display: none;
+}
+
+/* Cards for DB data */
+.card {
+    padding: 8px;
+    margin-top: 5px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}

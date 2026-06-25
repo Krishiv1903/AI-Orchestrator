@@ -1,0 +1,155 @@
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Distribution / Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# Type Checkers
+.mypy_cache/
+.pyre/
+.pytype/
+.dmypy.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ==========================================
+# Environment Variables
+# ==========================================
+.env
+.env.*
+!.env.example
+
+# ==========================================
+# IDEs
+# ==========================================
+.vscode/
+.idea/
+*.code-workspace
+
+# ==========================================
+# Logs
+# ==========================================
+logs/
+*.log
+*.out
+*.err
+
+# ==========================================
+# Database
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# OS Files
+# ==========================================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ==========================================
+# Docker
+# ==========================================
+docker-compose.override.yml
+*.pid
+
+# Ignore local Docker volumes
+docker-data/
+volumes/
+
+# ==========================================
+# Temporary Files
+# ==========================================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ==========================================
+# Cache
+# ==========================================
+.cache/
+.cache-loader/
+
+# ==========================================
+# Secrets / Keys
+# ==========================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+credentials.json
+secrets.json
+service-account.json
+
+# ==========================================
+# AI / LLM
+# ==========================================
+models/
+checkpoints/
+weights/
+embeddings/
+vector_store/
+faiss_index/
+chroma/
+chroma_db/
+*.faiss
+*.index
+
+# Hugging Face Cache
+.huggingface/
+hf_cache/
+
+# Ollama / Local Models
+ollama/
+ollama_models/
+
+# ==========================================
+# Node.js (if frontend exists)
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-lock.yaml
+
+# ==========================================
+# Coverage
+# ==========================================
+coverage/
+coverage.xml
+
+# ==========================================
+# Misc
+# ==========================================
+*.zip
+*.tar
+*.gz
+*.rar
