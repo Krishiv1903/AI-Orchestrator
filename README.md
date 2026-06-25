@@ -46,8 +46,8 @@ Designed with scalability, extensibility, and production deployment in mind, the
          ▼          ▼           ▼          ▼           ▼
    Intent      Task        Route      Workflow    Aggregator
   Analyzer   Decomposer    Planner      State
-         |                                      |
-         +------------------+-------------------+
+         |                                             |
+         +------------------+--------------------------+
                             |
                             ▼
                     +---------------------+
