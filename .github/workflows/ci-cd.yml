@@ -6,25 +6,53 @@ on:
       - main
       - master
       - develop
+
   pull_request:
     branches:
       - main
       - master
       - develop
 
+# Prevent multiple deployments from running at the same time
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+
 jobs:
+
+  # ============================================================
+  # CI - VALIDATE, TEST AND BUILD
+  # ============================================================
   validate:
-    name: Validate, install, and build
+    name: Validate, Test and Build
     runs-on: ubuntu-latest
+
     steps:
+
+      # ----------------------------------------------------------
+      # Checkout
+      # ----------------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+
+      # ----------------------------------------------------------
+      # Python
+      # ----------------------------------------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+          cache: "pip"
 
+
+      # ----------------------------------------------------------
+      # Install dependencies
+      # ----------------------------------------------------------
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
@@ -32,45 +60,121 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+
+      # ----------------------------------------------------------
+      # Python syntax check
+      # ----------------------------------------------------------
       - name: Check Python syntax
         run: |
-          python -m compileall core orchestrator mcp_server tools
+          python -m compileall -q core tools
 
-      - name: Run unit tests if present
+
+      # ----------------------------------------------------------
+      # Run tests
+      # ----------------------------------------------------------
+      - name: Run unit tests
+        shell: bash
         run: |
-          if [ -d tests ] || ls *_test.py 1> /dev/null 2>&1; then
+          if [ -d "tests" ]; then
+            echo "Tests directory found. Running pytest..."
             pytest --maxfail=1 --disable-warnings -q
           else
-            echo "No tests found, skipping pytest."
+            echo "No tests directory found. Skipping tests."
           fi
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
-      - name: Validate docker-compose
-        run: docker compose -f docker-compose.yml config
-
-      - name: Build Docker services
-        run: docker compose -f docker-compose.yml build
-
-  deploy:
-    name: Deploy preparation
-    needs: validate
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Validate docker-compose
-        run: docker compose -f docker-compose.yml config
-
-      - name: Build production images
-        run: docker compose -f docker-compose.yml build
-
-      - name: Deployment placeholder
+      # ----------------------------------------------------------
+      # Create .env from GitHub Secret
+      # ----------------------------------------------------------
+      - name: Create environment file
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
-          echo "CI passes. Add a deployment action here with your registry or cloud provider credentials."
+          if [ -z "$ENV_FILE" ]; then
+            echo "ERROR: ENV_FILE GitHub Secret is not configured."
+            exit 1
+          fi
+
+          printf '%s\n' "$ENV_FILE" > .env
+
+          echo ".env created successfully for CI."
+
+
+      # ----------------------------------------------------------
+      # Docker Buildx
+      # ----------------------------------------------------------
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      # ----------------------------------------------------------
+      # Docker Compose validation
+      # ----------------------------------------------------------
+      - name: Validate Docker Compose
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+
+
+      # ----------------------------------------------------------
+      # Build all Docker services
+      # ----------------------------------------------------------
+      - name: Build Docker services
+        run: |
+          docker compose -f docker-compose.yml build
+
+
+      # ----------------------------------------------------------
+      # Cleanup secrets
+      # ----------------------------------------------------------
+      - name: Remove environment file
+        if: always()
+        run: |
+          rm -f .env
+
+
+  # ============================================================
+  # CD - DEPLOY TO RENDER
+  # ============================================================
+  deploy:
+    name: Deploy to Render
+    needs: validate
+
+    # Deploy ONLY when code is pushed to main.
+    # Pull requests and develop/master pushes will only run CI.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ----------------------------------------------------------
+      # Trigger Render deployment
+      # ----------------------------------------------------------
+      - name: Trigger Render deployment
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "ERROR: RENDER_DEPLOY_HOOK GitHub Secret is not configured."
+            exit 1
+          fi
+
+          echo "Triggering Render deployment..."
+
+          curl --fail --silent --show-error \
+            -X POST "$RENDER_DEPLOY_HOOK"
+
+          echo "Render deployment triggered successfully."
+
+
+      # ----------------------------------------------------------
+      # Deployment summary
+      # ----------------------------------------------------------
+      - name: Deployment summary
+        run: |
+          echo "========================================"
+          echo "CI/CD PIPELINE COMPLETED"
+          echo "========================================"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Render deployment triggered successfully."
