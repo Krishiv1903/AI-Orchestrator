@@ -1,0 +1,159 @@
+services:
+
+  # ============================================================
+  # GATEWAY - PUBLIC ENTRY POINT
+  # ============================================================
+
+  - type: web
+    name: ai-orchestrator-gateway
+    runtime: docker
+    region: singapore
+    plan: starter
+
+    dockerfilePath: ./core/gateway/Dockerfile
+    dockerContext: .
+
+    autoDeployTrigger: checksPass
+
+    envVars:
+
+      - key: ORCHESTRATOR_URL
+        fromService:
+          type: pserv
+          name: ai-orchestrator-orchestrator
+          property: hostport
+
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+
+      - key: LANGCHAIN_API_KEY
+        sync: false
+
+      - key: LANGCHAIN_PROJECT
+        value: ai-platform
+
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
+
+      - key: GATEWAY_API_KEY
+        sync: false
+
+
+  # ============================================================
+  # ORCHESTRATOR - PRIVATE
+  # ============================================================
+
+  - type: pserv
+    name: ai-orchestrator-orchestrator
+    runtime: docker
+    region: singapore
+    plan: starter
+
+    dockerfilePath: ./core/orchestrator/Dockerfile
+    dockerContext: .
+
+    autoDeployTrigger: checksPass
+
+    envVars:
+
+      - key: MCP_SERVER_URL
+        fromService:
+          type: pserv
+          name: ai-orchestrator-mcp
+          property: hostport
+
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+
+      - key: LANGCHAIN_API_KEY
+        sync: false
+
+      - key: LANGCHAIN_PROJECT
+        value: ai-platform
+
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
+
+
+  # ============================================================
+  # MCP SERVER - PRIVATE
+  # ============================================================
+
+  - type: pserv
+    name: ai-orchestrator-mcp
+    runtime: docker
+    region: singapore
+    plan: starter
+
+    dockerfilePath: ./core/mcp_server/Dockerfile
+    dockerContext: .
+
+    autoDeployTrigger: checksPass
+
+    envVars:
+
+      - key: CODING_TOOL_URL
+        value: http://ai-orchestrator-tools:9001
+
+      - key: RESEARCH_TOOL_URL
+        value: http://ai-orchestrator-tools:9002
+
+      - key: DB_TOOL_URL
+        value: http://ai-orchestrator-tools:9003
+
+      - key: QA_TOOL_URL
+        value: http://ai-orchestrator-tools:9004
+
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+
+      - key: LANGCHAIN_API_KEY
+        sync: false
+
+      - key: LANGCHAIN_PROJECT
+        value: ai-platform
+
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
+
+
+  # ============================================================
+  # TOOLS - PRIVATE
+  # ============================================================
+
+  - type: pserv
+    name: ai-orchestrator-tools
+    runtime: docker
+    region: singapore
+    plan: starter
+
+    dockerfilePath: ./tools/Dockerfile
+    dockerContext: .
+
+    autoDeployTrigger: checksPass
+
+    envVars:
+
+      - key: GROQ_API_KEY
+        sync: false
+
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+
+      - key: LANGCHAIN_API_KEY
+        sync: false
+
+      - key: LANGCHAIN_PROJECT
+        value: ai-platform
+
+      - key: LANGCHAIN_TRACING_V2
+        value: "true"
