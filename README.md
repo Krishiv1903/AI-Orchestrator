@@ -2,7 +2,7 @@
 
 An AI workflow application with a browser chat UI, a FastAPI gateway, an orchestrator, an MCP-style tool dispatcher, and coding, research, database, and QA tools.
 
-**Deployed URL:** `https://<your-render-service>.onrender.com`
+**Deployed URL:** `[https://<your-render-service>.onrender.com](https://ai-orchestrator-d2xh.onrender.com/)`
 
 ## Architecture
 
