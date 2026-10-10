@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from core.orchestrator.llm import llm
+from core.orchestrator.llm import get_llm
 from langsmith import traceable
 from fastapi import Header, HTTPException
 from dotenv import load_dotenv
@@ -9,7 +9,7 @@ from core.utils.logger import setup_logger
 
 logger = setup_logger("qa_tool")
 
-load_dotenv("AI_Platform\core\config\.env")
+load_dotenv()
 
 API_KEY = os.getenv("GATEWAY_API_KEY")
 
@@ -20,11 +20,11 @@ class ToolRequest(BaseModel):
 
 @app.post("/execute")
 @traceable(run_type="tool")
-def execute(req: ToolRequest, authorization: str = Header(None)):
+def execute(req: ToolRequest, authorization: str | None = Header(default=None)):
 
     logger.info(f"Request received | task={req.task}")
 
-    if not authorization or not authorization.startswith("Bearer "):
+    if not API_KEY or not authorization or not authorization.startswith("Bearer "):
         logger.warning("Missing or invalid Authorization header")
         raise HTTPException(status_code=401, detail="Unauthorized")
     token = authorization.split(" ")[1]
@@ -37,7 +37,7 @@ def execute(req: ToolRequest, authorization: str = Header(None)):
     try:
         logger.info("Calling LLM for QA test point")
          
-        response = llm.invoke(f"""
+        response = get_llm().invoke(f"""
             You are a QA Engineer.
             List ONLY 1 key test points.
 
@@ -59,10 +59,4 @@ def execute(req: ToolRequest, authorization: str = Header(None)):
     except Exception as e:
         logger.error(f"QA tool execution failed: {str(e)}")
 
-        return {
-            "error": "QA tool failed",
-            "details": str(e)
-        }
-
-
-# uvicorn tools.qa_tool.main:app --port 9004
+        raise HTTPException(status_code=502, detail="LLM execution failed") from e

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException
 from core.orchestrator.graph import graph
 from core.orchestrator.state import OrchestratorState
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ import os
 logger = setup_logger("orchestrator")
 
 
-load_dotenv("AI_Platform\core\config\.env")
+load_dotenv()
 
 class RunRequest(BaseModel):
     prompt: str
@@ -20,17 +20,11 @@ app = FastAPI()
 
 @app.post("/run")
 @traceable(run_type="chain")
-async def run(req: RunRequest):
-    logger.info(f"Received request by orchestrator: {req.prompt}")
-    is_safe, message = is_safe_prompt(req.prompt)
-    
-    if not is_safe:
-        logger.warning(f"Unsafe prompt blocked: {message}")
-        return {
-            "error": message
-        }
+async def run(req: RunRequest, x_api_key: str | None = Header(default=None)):
+    if not os.getenv("GATEWAY_API_KEY") or x_api_key != os.getenv("GATEWAY_API_KEY"):
+        raise HTTPException(status_code=401, detail="Invalid API Key")
 
-
+    logger.info("Received request by orchestrator")
     initial_state: OrchestratorState = {
         "user_prompt": req.prompt,
         "intent": "",
@@ -40,6 +34,11 @@ async def run(req: RunRequest):
     }
 
     try:
+        is_safe, message = is_safe_prompt(req.prompt)
+        if not is_safe:
+            logger.warning("Unsafe prompt blocked")
+            raise HTTPException(status_code=400, detail=message)
+
         logger.info("Starting graph execution")
 
         result = await graph.ainvoke(initial_state)
@@ -48,12 +47,8 @@ async def run(req: RunRequest):
 
         return result["outputs"]
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error during orchestration: {str(e)}")
-
-        return {
-            "error": "Orchestration failed",
-            "details": str(e)
-        }
-
-# uvicorn core.orchestrator.main:app --reload --port 8002
+        raise HTTPException(status_code=500, detail="Orchestration failed") from e

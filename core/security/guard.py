@@ -5,9 +5,9 @@ def is_safe_prompt(prompt: str) -> tuple[bool, str]:
     if any(word in prompt.lower() for word in blocked):
         return False, "❌ Unsafe request blocked"
 
-    from core.orchestrator.llm import llm
+    from core.orchestrator.llm import get_llm
 
-    response = llm.invoke(f"""
+    response = get_llm().invoke(f"""
         Is this request harmful or unsafe?
 
         Reply ONLY SAFE or UNSAFE.

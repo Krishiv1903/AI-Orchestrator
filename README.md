@@ -1,359 +1,80 @@
-# 🚀 AI Orchestrator Platform
+# AI Orchestrator
 
-Link - https://ai-orchestrator-tfq6.onrender.com
+An AI workflow application with a browser chat UI, a FastAPI gateway, an orchestrator, an MCP-style tool dispatcher, and coding, research, database, and QA tools.
 
-A modular, enterprise-ready AI orchestration platform that enables intelligent coordination between Large Language Models (LLMs), AI agents, and specialized tools through a centralized workflow engine.
+**Deployed URL:** `https://<your-render-service>.onrender.com`
 
-Designed with scalability, extensibility, and production deployment in mind, the platform supports multi-agent reasoning, Retrieval-Augmented Generation (RAG), Model Context Protocol (MCP), Docker-based deployment, and pluggable tool integration.
+## Architecture
 
----
+The four existing services remain separate FastAPI applications in the codebase, but the production entry point mounts them in one process and one Render web service. The gateway serves the UI and forwards authenticated requests to the orchestrator; the orchestrator calls the MCP dispatcher, which routes to the selected tool. Internal HTTP calls use loopback URLs on the same Render-assigned `PORT`.
 
-## ✨ Features
-
-* 🧠 Multi-Agent AI Orchestration
-* 🤖 LLM Integration
-* 🔍 Retrieval-Augmented Generation (RAG)
-* 🔗 Model Context Protocol (MCP) Support
-* ⚙️ Intelligent Task Decomposition
-* 🎯 Intent Analysis & Routing
-* 📊 Workflow State Management
-* 🔄 Response Aggregation
-* 🛡️ AI Security & Authorization Layer
-* 📦 Docker & Docker Compose Deployment
-* 📝 Centralized Logging
-* 🔌 Pluggable Tool Architecture
-* 🌐 REST API Gateway
-
----
-
-# 🏗️ Architecture
-
-```
-                    +---------------------+
-                    |     Client / UI     |
-                    +----------+----------+
-                               |
-                               ▼
-                    +---------------------+
-                    |      Gateway API    |
-                    +----------+----------+
-                               |
-                               ▼
-                    +---------------------+
-                    |     Orchestrator    |
-                    +----------+----------+
-                               |
-         +---------------------+----------------------+
-         |          |           |          |           |
-         ▼          ▼           ▼          ▼           ▼
-   Intent      Task        Route      Workflow    Aggregator
-  Analyzer   Decomposer    Planner      State
-         |                                             |
-         +------------------+--------------------------+
-                            |
-                            ▼
-                    +---------------------+
-                    |    Executor Engine  |
-                    +----------+----------+
-                               |
-          +----------+----------+----------+----------+
-          |          |          |          |          |
-          ▼          ▼          ▼          ▼          ▼
-      QA Tool   Research   Coding Tool  DB Tool    Custom
-                  Tool                                Tools
-                               |
-                               ▼
-                    +---------------------+
-                    |    MCP / LLM Layer  |
-                    +----------+----------+
-                               |
-                               ▼
-                        External Models
+```text
+Browser -> Gateway/UI -> Orchestrator -> MCP dispatcher -> Tools
+                  One Render free web service
 ```
 
----
+The app uses Groq for model calls. A Groq API key is required for chat/task execution. LangSmith tracing is optional and disabled unless configured separately.
 
-# 📂 Project Structure
+## Deploy free on Render
 
-```
-AI_PLATFORM
-│
-├── core
-│   ├── config
-│   │   └── .env
-│   │
-│   ├── gateway
-│   │   ├── static
-│   │   ├── Dockerfile
-│   │   └── main.py
-│   │
-│   ├── mcp_server
-│   │   ├── Dockerfile
-│   │   └── main.py
-│   │
-│   ├── orchestrator
-│   │   ├── services
-│   │   ├── aggregator.py
-│   │   ├── executor.py
-│   │   ├── graph.py
-│   │   ├── llm.py
-│   │   ├── mcp_client.py
-│   │   ├── state.py
-│   │   ├── main.py
-│   │   └── Dockerfile
-│   │
-│   ├── security
-│   │   └── guard.py
-│   │
-│   └── utils
-│       └── logger.py
-│
-├── tools
-│   ├── coding_tool
-│   ├── db_tool
-│   ├── qa_tool
-│   ├── research_tool
-│   ├── Dockerfile
-│   └── __init__.py
-│
-├── docker-compose.yml
-├── requirements.txt
-├── .env
-├── .gitignore
-└── README.md
-```
+1. Push this repository to GitHub and choose **New + > Blueprint** in Render. Connect the repository and deploy the Blueprint from `render.yaml`.
+2. In the Render service's Environment settings, provide:
+   - `GROQ_API_KEY`: your Groq API key.
+   - `GATEWAY_API_KEY`: a long, unique value that users must enter to use the chat.
+3. Save the environment changes and wait for the service to become Live. Render uses the root `Dockerfile`, assigns `PORT`, and checks `/healthz`.
+4. Replace the URL placeholder at the top of this README with the service URL shown by Render.
 
----
+No paid Render services or external database are required. The free web service may spin down while idle, so the first request after inactivity can take longer. The model provider may have its own usage limits or terms.
 
-# 🔄 Request Flow
+## Run locally
 
-1. User sends a request through the Gateway.
-2. Gateway forwards the request to the Orchestrator.
-3. Intent Analyzer identifies the user's objective.
-4. Task Decomposer splits the request into executable subtasks.
-5. Route Planner selects the appropriate AI agents and tools.
-6. Executor invokes the required services.
-7. MCP Client communicates with external LLM providers.
-8. Individual tools process specialized tasks.
-9. Aggregator combines outputs into a unified response.
-10. Gateway returns the final response to the user.
-
----
-
-# 🧩 Core Components
-
-## Gateway
-
-* REST API
-* User Interface
-* Request Validation
-* Authentication
-* Response Formatting
-
----
-
-## Orchestrator
-
-Responsible for:
-
-* Task orchestration
-* Multi-agent coordination
-* Workflow execution
-* State management
-* Tool invocation
-* Result aggregation
-
----
-
-## AI Services
-
-### Intent Analyzer
-
-Determines what the user wants.
-
-### Task Decomposer
-
-Breaks complex requests into smaller tasks.
-
-### Route Planner
-
-Selects which AI tools and agents should execute each task.
-
-### Executor
-
-Runs tools and coordinates execution.
-
-### Aggregator
-
-Combines outputs from multiple agents into a single response.
-
-### Workflow State
-
-Maintains execution context across multi-step reasoning.
-
----
-
-## MCP Server
-
-Implements the Model Context Protocol for standardized communication between AI services and external language models.
-
----
-
-## Tool Adapters
-
-Each tool follows a standardized interface.
-
-Current supported tools include:
-
-* Question Answering
-* Research
-* Database Querying
-* Code Generation
-* Custom Enterprise Tools
-
-Adding a new tool only requires creating a new adapter and registering it with the executor.
-
----
-
-# 🛠️ Technology Stack
-
-| Category         | Technologies                 |
-| ---------------- | ---------------------------- |
-| Language         | Python                       |
-| AI               | Large Language Models (LLMs) |
-| Architecture     | Multi-Agent Systems          |
-| Protocol         | Model Context Protocol (MCP) |
-| Retrieval        | RAG                          |
-| APIs             | REST                         |
-| Containerization | Docker, Docker Compose       |
-| Security         | Authorization Layer          |
-| Logging          | Centralized Logging          |
-| Deployment       | Docker                       |
-
----
-
-# 🚀 Local Setup
-
-Clone the repository
-
-```bash
-git clone <repository-url>
-cd AI_Platform
-```
-
-Create a virtual environment
-
-```bash
-python -m venv .venv
-```
-
-Activate it
-
-### Windows
+From the repository root, create a local environment file and add your own keys:
 
 ```powershell
-.venv\Scripts\activate
+Copy-Item .env.example .env
 ```
 
-### Linux / macOS
+Then start the same single-service setup used for deployment:
 
-```bash
-source .venv/bin/activate
+```powershell
+docker compose up --build
 ```
 
-Install dependencies
+Open `http://localhost:10000`. Enter the configured `GATEWAY_API_KEY` in the chat input before sending a prompt. To stop the service, run `docker compose down`.
 
-```bash
-pip install -r requirements.txt
+To run without Docker, install `requirements.txt` in a Python 3.11 environment and start:
+
+```powershell
+uvicorn core.deployment:app --host 0.0.0.0 --port 10000
 ```
 
----
+## Configuration
 
-# ▶️ Running the Project
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `GROQ_API_KEY` | For AI requests | Authenticates model requests. |
+| `GATEWAY_API_KEY` | Yes | Protects the gateway and internal service routes. |
+| `GROQ_MODEL` | No | Groq model name; defaults to `llama-3.3-70b-versatile`. |
+| `PORT` | Set by Render | Port used by the web server and internal service calls. |
 
-### Gateway
+Copy `.env.example` to `.env` only for local development. Do not commit real credentials or put them in source code, the UI, or a public repository.
 
-```bash
-python core/gateway/main.py
-```
+## Project layout
 
-### Orchestrator
-
-```bash
-python orchestrator/main.py
-```
-
-### MCP Server
-
-```bash
-python mcp_server/main.py
-```
-
----
-
-# 🐳 Docker Deployment
-
-Build and start the complete platform
-
-```bash
-docker-compose up --build
-```
-
-Run in detached mode
-
-```bash
-docker-compose up -d
-```
-
-Stop containers
-
-```bash
-docker-compose down
-```
-
----
-
-# 🔌 Adding New Tools
-
-1. Create a new directory inside `tools/`.
-
-```
+```text
+core/
+  deployment.py          Single-process production entry point
+  gateway/               Public API and static chat UI
+  orchestrator/          Workflow graph, routing, and MCP client
+  mcp_server/             Tool dispatcher
+  security/               Prompt safety checks
+  utils/                  Logging
 tools/
-└── my_tool/
-    └── main.py
+  coding_tool/
+  db_tool/
+  qa_tool/
+  research_tool/
+Dockerfile                Production image for the combined service
+docker-compose.yml        Local single-container run
+render.yaml               Free Render Blueprint
 ```
-
-2. Implement the adapter interface.
-
-3. Register the tool inside `orchestrator/executor.py`.
-
-The orchestrator will automatically route requests to the new tool.
-
----
-
-# 🔐 Security
-
-The platform includes:
-
-* Request validation
-* Authorization middleware
-* Input sanitization
-* Secure tool execution
-* Modular security guard layer
-
-Production deployments should additionally include:
-
-* HTTPS
-* API rate limiting
-* Secret management
-* Role-based access control
-* Audit logging
-
----
-
-## 👨‍💻 Author
-
-**Krishiv Goyal**
-
-Software Engineering Undergraduate
-AI • Backend • Full Stack • Multi-Agent Systems

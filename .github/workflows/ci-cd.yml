@@ -1,205 +1,42 @@
-name: CI/CD Pipeline
+name: CI
 
 on:
   push:
-    branches:
-      - main
-      - master
-      - develop
-
+    branches: [main, master, develop]
   pull_request:
-    branches:
-      - main
-      - master
-      - develop
-
-# Prevent multiple workflow runs from running at the same time
-concurrency:
-  group: ci-cd-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [main, master, develop]
 
 permissions:
   contents: read
 
-
 jobs:
-
-  # ============================================================
-  # CI - VALIDATE, TEST AND BUILD
-  # ============================================================
-
   validate:
-    name: Validate, Test and Build
     runs-on: ubuntu-latest
-
-    # IMPORTANT:
-    # Your ENV_FILE secret is inside the "env file" Environment
-    environment: "env file"
-
     steps:
-
-      # ----------------------------------------------------------
-      # Checkout
-      # ----------------------------------------------------------
-
       - name: Checkout repository
         uses: actions/checkout@v4
-
-
-      # ----------------------------------------------------------
-      # Python
-      # ----------------------------------------------------------
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
+          cache: pip
+          cache-dependency-path: requirements.txt
 
-
-      # ----------------------------------------------------------
-      # Install dependencies
-      # ----------------------------------------------------------
-
-      - name: Install Python dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install wheel
-          pip install -r requirements.txt
-          pip install pytest
-
-
-      # ----------------------------------------------------------
-      # Python syntax check
-      # ----------------------------------------------------------
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
 
       - name: Check Python syntax
+        run: python -m compileall -q core tools
+
+      - name: Run tests
         run: |
-          python -m compileall -q core tools
-
-
-      # ----------------------------------------------------------
-      # Run tests
-      # ----------------------------------------------------------
-
-      - name: Run unit tests
-        shell: bash
-        run: |
-          if [ -d "tests" ]; then
-            echo "Tests directory found. Running pytest..."
+          if [ -d tests ]; then
+            python -m pip install pytest
             pytest --maxfail=1 --disable-warnings -q
           else
             echo "No tests directory found. Skipping tests."
           fi
 
-
-      # ----------------------------------------------------------
-      # Create .env from GitHub Environment Secret
-      # ----------------------------------------------------------
-
-      - name: Create environment file
-        env:
-          ENV_FILE: ${{ secrets.ENV_FILE }}
-        run: |
-          if [ -z "$ENV_FILE" ]; then
-            echo "ERROR: ENV_FILE GitHub Secret is not configured."
-            exit 1
-          fi
-
-          printf '%s\n' "$ENV_FILE" > .env
-
-          echo ".env created successfully for CI."
-
-
-      # ----------------------------------------------------------
-      # Docker Buildx
-      # ----------------------------------------------------------
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-
-      # ----------------------------------------------------------
-      # Docker Compose validation
-      # ----------------------------------------------------------
-
-      - name: Validate Docker Compose
-        run: |
-          docker compose -f docker-compose.yml config --quiet
-
-
-      # ----------------------------------------------------------
-      # Build all Docker services
-      # ----------------------------------------------------------
-
-      - name: Build Docker services
-        run: |
-          docker compose -f docker-compose.yml build
-
-
-      # ----------------------------------------------------------
-      # Cleanup .env
-      # ----------------------------------------------------------
-
-      - name: Remove environment file
-        if: always()
-        run: |
-          rm -f .env
-
-
-  # ============================================================
-  # CD - DEPLOY TO RENDER
-  # ============================================================
-
-  deploy:
-    name: Deploy to Render
-    needs: validate
-
-    # Deploy ONLY after a successful push to main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    runs-on: ubuntu-latest
-
-    # RENDER_DEPLOY_HOOK should also be stored
-    # inside the "env file" GitHub Environment
-    environment: "env file"
-
-    steps:
-
-      # ----------------------------------------------------------
-      # Trigger Render deployment
-      # ----------------------------------------------------------
-
-      - name: Trigger Render deployment
-        env:
-          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
-        run: |
-
-          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
-            echo "ERROR: RENDER_DEPLOY_HOOK GitHub Secret is not configured."
-            exit 1
-          fi
-
-          echo "Triggering Render deployment..."
-
-          curl \
-            --fail \
-            --silent \
-            --show-error \
-            -X POST "$RENDER_DEPLOY_HOOK"
-
-          echo "Render deployment triggered successfully."
-
-
-      # ----------------------------------------------------------
-      # Deployment summary
-      # ----------------------------------------------------------
-
-      - name: Deployment summary
-        run: |
-          echo "========================================"
-          echo "CI/CD PIPELINE COMPLETED"
-          echo "========================================"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Render deployment triggered successfully."
+      - name: Build production Docker image
+        run: docker build --tag ai-orchestrator .

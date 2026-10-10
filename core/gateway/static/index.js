@@ -7,41 +7,6 @@ window.onload = function () {
     }, 500);
 };
 
-
-// ✅ AUTHENTICATE FIRST
-async function authenticate() {
-
-    const apiKey = document.getElementById("apiKeyInput").value;
-
-    if (!apiKey) {
-        alert("⚠️ Enter API key");
-        return;
-    }
-
-    try {
-        const res = await fetch("/authenticate", {
-            method: "POST",
-            headers: {
-                "x-api-key": apiKey
-            }
-        });
-
-        if (res.status === 401) {
-            addMessage("❌ Invalid API Key", "bot");
-            return;
-        }
-
-        isAuthenticated = true;
-
-        addMessage("✅ Authentication successful! You can now chat.", "bot");
-
-    } catch (err) {
-        addMessage("❌ Server error", "bot");
-    }
-}
-
-
-
 // ✅ MAIN CHAT FUNCTION
 async function sendMessage() {
 
@@ -50,7 +15,6 @@ async function sendMessage() {
 
     if (!text) return;
 
-    addMessage(text, "user");
     input.value = "";
 
     // ✅ STEP 1: AUTHENTICATION
@@ -69,6 +33,9 @@ async function sendMessage() {
                 addMessage("❌ Invalid API Key. Try again.", "bot");
                 return;
             }
+            if (!res.ok) {
+                throw new Error("Authentication request failed");
+            }
 
             isAuthenticated = true;
 
@@ -80,6 +47,8 @@ async function sendMessage() {
             return;
         }
     }
+
+    addMessage(text, "user");
 
     // ✅ STEP 2: NORMAL CHAT
     showLoader();
@@ -106,7 +75,7 @@ async function sendMessage() {
         const data = await response.json();
 
         hideLoader();
-        addMessage(formatResponse(data), "bot");
+        addResponse(data);
 
     } catch (error) {
         console.error(error);
@@ -123,10 +92,48 @@ function addMessage(text, sender) {
 
     const msg = document.createElement("div");
     msg.className = "message " + sender;
-    msg.innerHTML = text;
+    msg.textContent = text;
 
     chat.appendChild(msg);
     chat.scrollTop = chat.scrollHeight;
+}
+
+function addResponse(response) {
+    const chat = document.getElementById("chat");
+    const message = document.createElement("div");
+    message.className = "message bot";
+
+    if (response.error || response.detail) {
+        addCard(message, `❌ ${response.error || response.detail}`);
+    } else {
+        for (const item of Object.values(response)) {
+            if (!item) continue;
+
+            if (item.error) {
+                addCard(message, `❌ ${item.error}`);
+            } else if (item.research_output) {
+                addCard(message, `🔍 ${item.research_output}`);
+            } else if (item.identified_language) {
+                addCard(
+                    message,
+                    `📌 ${item.task || ""}\n💻 ${item.identified_language}`,
+                );
+            }
+        }
+    }
+
+    if (!message.childElementCount) {
+        message.textContent = "⚠️ No valid response received";
+    }
+    chat.appendChild(message);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+function addCard(parent, text) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.textContent = text;
+    parent.appendChild(card);
 }
 
 // Loader
@@ -137,44 +144,6 @@ function showLoader() {
 function hideLoader() {
     document.getElementById("loader").classList.add("hidden");
 }
-
-
-function formatResponse(res) {
-
-    if (res.error) {
-        return `<div class="card">❌ ${res.error}</div>`;
-    }
-
-    let output = "";
-
-    for (const key in res) {
-        const item = res[key];
-
-        if (!item) continue;
-
-        if (item.error) {
-            output += `<div class="card">❌ ${item.error}</div>`;
-        } 
-        else if (item.research_output) {
-            output += `
-            <div class="card">
-                🔍 ${item.research_output}
-            </div>`;
-        } 
-        else if (item.identified_language) {
-            output += `
-            <div class="card">
-                📌 ${item.task || ""}
-                <br>
-                💻 <b>${item.identified_language}</b>
-            </div>`;
-        }
-    }
-
-    return output || "⚠️ No valid response received";
-}
-
-
 document.getElementById("message").addEventListener("keypress", function(e) {
     if (e.key === "Enter") {
         sendMessage();

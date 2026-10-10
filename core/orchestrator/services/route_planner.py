@@ -1,4 +1,4 @@
-from core.orchestrator.llm import llm
+from core.orchestrator.llm import get_llm
 import ast
 from langsmith import traceable
 from core.utils.logger import setup_logger
@@ -12,7 +12,7 @@ def route_tasks(state):
 
     logger.info(f"Routing tasks: {tasks}")
 
-    response = llm.invoke(f"""
+    response = get_llm().invoke(f"""
         You are an AI router.
 
         Available tools:

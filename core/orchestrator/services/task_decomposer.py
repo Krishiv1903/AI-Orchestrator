@@ -1,4 +1,4 @@
-from core.orchestrator.llm import llm
+from core.orchestrator.llm import get_llm
 import ast
 from langsmith import traceable
 from core.utils.logger import setup_logger
@@ -12,7 +12,7 @@ def decompose_tasks(state):
 
     logger.info(f"Decomposing prompt: {prompt}")
 
-    response = llm.invoke(f"""
+    response = get_llm().invoke(f"""
         You are an AI planner.
 
         Your job is to break a user request into meaningful tasks.
@@ -56,4 +56,3 @@ def decompose_tasks(state):
         logger.info(f"Fallback tasks: {tasks}")
 
     return {"tasks": tasks}
-
